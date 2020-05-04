@@ -8,6 +8,14 @@ function check_validity(valid_to){
 	
 	return Math.round(Math.abs((parsedDate - currentDate) / oneDay));
 }
+
+function isObjEmpty(obj) {
+    for(var key in obj) {
+        if(obj.hasOwnProperty(key))
+            return false;
+    }
+    return true;
+}
 // Information required
 // Hostname
 // Valid from
@@ -17,14 +25,10 @@ function check_validity(valid_to){
 // SAN
 // Location
 // return a Json formated result
-async function getCertInfo(hosts){
-	  
-	var all_cert_info = [];
+async function certificateMetadata(hostname){
+	new Promise( async (resolve, reject) => {
+		let certData = 	await sslCertificate.get(hostname).then(function (certificate) {
 
-	await hosts.forEach(host =>{
-    	// getCertInfo(host)
-		 sslCertificate.get(host).then(function (certificate) {
-		
 		  let valid_from = certificate.valid_from;
 		  let valid_to = certificate.valid_to;
 		  let days_until_expiry = check_validity(valid_to);
@@ -33,9 +37,9 @@ async function getCertInfo(hosts){
 		  let cert_issuer = objectValue['O'];
 		  let location = objectValue['L'];
 		  let cert_info = {};
-		  		  
+		
 		  cert_info = {
-			  hostname : host,
+			  hostname : hostname,
 			  issuer : cert_issuer,
 			  loc : location,
 			  sans : certificate.subjectaltname,
@@ -43,22 +47,33 @@ async function getCertInfo(hosts){
 			  until: valid_to,
 			  expiring_in : days_until_expiry
 		  };
-		  console.log(cert_info);
-		  all_cert_info.push(cert_info);
+		  return cert_info;
 		});
+		if (!isObjEmpty(certData)){
+			resolve(certData);
+		} else {
+			reject('The hosts SSL cert could not be retrieved');
+		}
 	});
-
-	console.log(all_cert_info.length);
-	return all_cert_info;
-
 }
 
+async function getCertInfo(hosts){
 
+	let all_certs = [];	 
+	 for (const host of hosts) { 
+		let certInfo = await certificateMetadata(host)	
+		all_certs.push(certInfo);
+		}
+	 
+	return all_certs; 
+}
 
 var hosts = ['letsencrypt.org','google.com','apple.com','theverge.com']
 
-var cert_info = getCertInfo(hosts);
-console.log(cert_info.length)
-for(let i  = 0 ; i < cert_info.length ; i ++) {
-	console.log(cert_info[i]);
+async function notify_about_expiring_certs(hosts){
+	let arr_cert_metadat = await getCertInfo(hosts); 
+	arr_cert_metadat.forEach( certData => {
+		console.log(certData.expiring_in);
+	})
 }
+notify_about_expiring_certs(hosts);
