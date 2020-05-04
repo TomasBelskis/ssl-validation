@@ -1,5 +1,13 @@
 const sslCertificate = require('get-ssl-certificate')
 
+// Computes the validity of the cert.
+function check_validity(valid_to){
+	const currentDate = new Date();
+	const oneDay = 24 * 60 * 60 * 1000;  
+	const parsedDate = Date.parse(valid_to);
+	
+	return Math.round(Math.abs((parsedDate - currentDate) / oneDay));
+}
 // Information required
 // Hostname
 // Valid from
@@ -8,52 +16,49 @@ const sslCertificate = require('get-ssl-certificate')
 // Cert Issuer
 // SAN
 // Location
-function getCertInfo(hostname){
-	sslCertificate.get(hostname).then(function (certificate) {
-	  var host_ssl_info = {};
-	  var valid_from = certificate.valid_from;
-	  var valid_to = certificate.valid_to;
-	  var days_until_expiry = 0;
-	  var string = JSON.stringify(certificate.issuer);
-	  var objectValue = JSON.parse(string);
-	  var cert_issuer = objectValue['O'];
-	  var location = objectValue['L'];
-	  //console.log(certificate)
-	  // certificate is a JavaScript object
+// return a Json formated result
+async function getCertInfo(hosts){
 	  
-		
-	  console.log('### SSL Certificate Information ###')
-	  console.log('Hostname: ' + hostname )
-	  console.log('\t Valid from: ' + valid_from)
-	  console.log('\t Valid to: ' + valid_to)
-	  console.log('\t Days till expiry: ' + days_until_expiry)
-	  console.log('\t Certificate issues: ' + cert_issuer)
-	  console.log('\t Location: ' + location)
-	  console.log('\t Site Alternative Names:\n\t ' + certificate.subjectaltname + '\n')
-	  console.log('\n') 
-          
-          // console.log(certificate.subjectaltname)
-	  // { C: 'GB',
-	  //   ST: 'Greater Manchester',
-	  //   L: 'Salford',
-	  //   O: 'COMODO CA Limited',
-	  //   CN: 'COMODO RSA Domain Validation Secure Server CA' }
-	
-	  //console.log(certificate.valid_from)
-	  // 'Aug  14 00:00:00 2017 GMT'
-	
-	  // console.log(certificate.valid_to)
-	  // 'Nov 20 23:59:59 2019 GMT'
-	
-	  // If there was a certificate.raw attribute, then you can access certificate.pemEncoded
-	  //console.log(certificate.pemEncoded)
-	  // -----BEGIN CERTIFICATE-----
-	  // ...
-	  // -----END CERTIFICATE-----
-	});
-}
-var hosts = ['letsencrypt.org','google.com','apple.com','theverge.com']
-hosts.forEach(host =>{
-  getCertInfo(host)
-});
+	var all_cert_info = [];
 
+	await hosts.forEach(host =>{
+    	// getCertInfo(host)
+		 sslCertificate.get(host).then(function (certificate) {
+		
+		  let valid_from = certificate.valid_from;
+		  let valid_to = certificate.valid_to;
+		  let days_until_expiry = check_validity(valid_to);
+		  let string = JSON.stringify(certificate.issuer);
+		  let objectValue = JSON.parse(string);
+		  let cert_issuer = objectValue['O'];
+		  let location = objectValue['L'];
+		  let cert_info = {};
+		  		  
+		  cert_info = {
+			  hostname : host,
+			  issuer : cert_issuer,
+			  loc : location,
+			  sans : certificate.subjectaltname,
+			  issued : valid_from,
+			  until: valid_to,
+			  expiring_in : days_until_expiry
+		  };
+		  console.log(cert_info);
+		  all_cert_info.push(cert_info);
+		});
+	});
+
+	console.log(all_cert_info.length);
+	return all_cert_info;
+
+}
+
+
+
+var hosts = ['letsencrypt.org','google.com','apple.com','theverge.com']
+
+var cert_info = getCertInfo(hosts);
+console.log(cert_info.length)
+for(let i  = 0 ; i < cert_info.length ; i ++) {
+	console.log(cert_info[i]);
+}
