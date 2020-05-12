@@ -1,5 +1,6 @@
 const sslCertificate = require('get-ssl-certificate')
 
+// Example hosts that get analyzed
 var hosts = ['letsencrypt.org','google.com','apple.com','theverge.com', 'expired.badssl.com']
 
 // Computes the validity of the cert.
@@ -18,6 +19,7 @@ function check_validity(valid_to){
 	}
 }
 
+// Function to check if the object is empty
 function isObjEmpty(obj) {
     for(var key in obj) {
         if(obj.hasOwnProperty(key))
@@ -25,15 +27,18 @@ function isObjEmpty(obj) {
     }
     return true;
 }
-// Information required
-// Hostname
-// Valid from
-// Valid until
-// Days until expiry
-// Cert Issuer
-// SAN
-// Location
-// return a Json formated result
+
+/*
+ * Main function that fetches the metadata of a certificate.
+ * Hostname
+ * Valid from
+ * Valid until
+ * Days until expiry
+ * Cert Issuer
+ * SAN
+ * Location
+ * Returns an object formated result
+ */
 function fetchCertInfo(hostname){
 		return new Promise ((res, rej) => {
 			sslCertificate.get(hostname).then(function (certificate) {
@@ -61,6 +66,7 @@ function fetchCertInfo(hostname){
 		});
 }
 
+// Stores all the cert's that were fetched into an array of objects.
 async function storeAllCertInfo(hosts){
 		let all_certs = [];	 
 			for (const hostname of hosts) { 
@@ -72,7 +78,8 @@ async function storeAllCertInfo(hosts){
 	});
 }
 
-async function notify_about_expiring_certs(certDataArr){
+// Generates a response based on the cert being valid/invalid.
+function notify_about_expiring_certs(certDataArr){
 	certDataArr.forEach(certInfo => {
 		if (certInfo.expiring_in >= 1){
 			console.log('\n ------------------------------------------------------');
@@ -88,6 +95,8 @@ async function notify_about_expiring_certs(certDataArr){
 		}	
 	});
 }
+
+// Main execution of the functions.
 storeAllCertInfo(hosts).then((certDataArr) => {
 	notify_about_expiring_certs(certDataArr);	
 });
