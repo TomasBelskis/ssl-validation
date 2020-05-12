@@ -105,7 +105,7 @@ function validateCertificates(certData){
 			console.log('\n ------------------------------------------------------');
 			console.log(`The certificate for ${ certInfo.hostname } has expired!`);
 			console.log(`Days since expiry ${ certInfo.expiring_in }.`);
-			console.log(`Expired in ${ certInfo.until }.`);
+			console.log(`Expired in ${ certInfo.valid_until }.`);
 		}	
 	});
 }
