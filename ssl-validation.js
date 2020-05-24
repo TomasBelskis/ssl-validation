@@ -3,6 +3,10 @@ const sslCertificate = require('get-ssl-certificate')
 // Example hosts that get analyzed
 var hosts = ['letsencrypt.org','google.com','apple.com','theverge.com', 'expired.badssl.com']
 
+// Main execution 
+var main = storeAllCertInfo(hosts).then((certDataArr) => {
+	validateCertificates(certDataArr);	
+});
 /**
  * Computes the validity of the cert.
  * @param {string} - The valid_to string contains the date of when the certificate expires.hostname
@@ -110,7 +114,4 @@ function validateCertificates(certData){
 	});
 }
 
-// Main execution of the functions.
-storeAllCertInfo(hosts).then((certDataArr) => {
-	validateCertificates(certDataArr);	
-});
+
